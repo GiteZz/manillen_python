@@ -1,0 +1,117 @@
+<html>
+<head>
+    <title>Manillen</title>
+    <meta http-equiv="expires" content="0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/general.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/form_page.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/play_page.css') }}">
+
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+
+        $(document).ready(function(){
+            namespace = '/';
+
+
+
+            var socket = io.connect('http://' + '0.0.0.0:5000' + namespace);
+
+
+            socket.on('connect', function() {
+                socket.emit('client_connect');
+            });
+
+            $('form#give_info_form').submit(function(event) {
+                socket.emit('client_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(), table_location : $('#table_location_input').val()});
+
+                return false;
+            });
+
+        });
+
+    </script>
+</head>
+<body>
+<div id="form_page">
+
+    <div id="form_page_wrapper">
+        <div id="info_form_stylisticstop"><img src="{{ url_for('static',filename='images/topelement.png) }}"></div>
+        <div id="info_form_wrapper">
+            <form id="give_info_form" method="POST" action='#'>
+                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
+                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square"><br><br>
+                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square"><br><br>
+                Locatie op tafel:<br><br>
+                <select name="seat_location" id="table_location_input" class="semi-square"><br><br>
+    			    <option value="0">Team 1 - Positie 1</option>
+    			    <option value="1">Team 2 - Positie 1</option>
+    			    <option value="2">Team 1 - Positie 2</option>
+    			    <option value="3">Team 2 - Positie 2</option>
+    		        </select><br><br><br>
+                 <input type="submit" value="Submit" id="submit_button" class=".semi-square ">
+            </form>
+        </div>
+        <div id="info_form_stylisticsbottom"><img src="topelement.png"></div>
+    </div>
+
+</div>
+<div id="play_page">
+    <div id="troef_box"><span>&hearts;</div>
+    <div id="playing_box">
+        <div id="table_card_wrapper" class="">
+            <div id="table_card0_wrapper" class="table_card">
+                <div id="table_card0_top_wrapper" class="card_top">&spades;</div>
+                <div id="table_card0_bottom_wrapper" class="card_bottom">9</div>
+            </div>
+            <div id="table_card1_wrapper" class="table_card table_middle_card">
+                <div id="table_card1_top_wrapper" class="card_top">&spades;</div>
+                <div id="table_card1_bottom_wrapper" class="card_bottom">9</div>
+            </div>
+            <div id="table_card2_wrapper" class="table_card table_middle_card">
+                <div id="table_card2_top_wrapper" class="card_top">&spades;</div>
+                <div id="table_card2_bottom_wrapper" class="card_bottom">9</div>
+            </div>
+            <div id="table_card3_wrapper" class="table_card">
+                <div id="table_card3_top_wrapper" class="card_top">&spades;</div>
+                <div id="table_card3_bottom_wrapper" class="card_bottom">9</div>
+            </div>
+        </div>
+    </div>
+    <div id="stitch_line_wrapper">
+        <div id="stitch_line"></div>
+    </div>
+    <div id="player_card_wrapper">
+        <div id="play_card0_wrapper" class="playing_card">
+            <div id="play_card0_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card0_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card1_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card1_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card1_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card2_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card2_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card2_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card3_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card3_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card3_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card4_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card4_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card4_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card5_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card5_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card5_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+        <div id="play_card6_wrapper" class="playing_card">
+            <div id="play_card6_top_wrapper" class="card_top">&spades;</div>
+            <div id="play_card6_bottom_wrapper" class="card_bottom">9</div>
+        </div>
+    </div>
+</div>
+</body>
+
