@@ -2,10 +2,10 @@
 <head>
     <title>Manillen</title>
     <meta http-equiv="expires" content="0">
+
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/general.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/form_page.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/play_page.css') }}">
-
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
@@ -14,17 +14,88 @@
         $(document).ready(function(){
             namespace = '/';
 
+            choose_troef_allowed = false;
+            play_card_allowed = false
 
+            var play_cards;
 
             var socket = io.connect('http://' + '0.0.0.0:5000' + namespace);
+            socket.on('wait_other_players', function() {
+                console.log("changing to play_page, waiting for other players...")
 
+                $('#form_page').css('display','none');
+                $('#play_page').css('display','block');
+            });
+            socket.on('ask_info', function() {
+                $('#form_page').css('display','block');
+                $('#play_page').css('display','none');
+            });
+            //This is a test function, used to give information to the client instead of asking it
+            socket.on('give_info', function(data) {
+                console.log("This is a testing function")
+                console.log(data)
+                $('#table_name_input').val(data['game_name']);
+                $('#team_name_input').val(data['team_name']);
+                $('#player_name_input').val(data['player_name']);
+                $('#table_location_input').val(data['position']);
+                $('#form_page').css('display','block');
+                $('#play_page').css('display','none');
+                $('#submit_button').trigger('click');
 
+            });
             socket.on('connect', function() {
                 socket.emit('client_connect');
             });
+            socket.on('set_game_info', function(data){
+                //suits = ['H','D','C','S']
+                play_cards = data["cards"]
+                set_cards(play_cards)
+
+            });
+            socket.on('choose_troef', function () {
+
+            });
+
+            $(document).on('click', '.playing_card, . playing_card_bottom, . playing_card_top', function(){
+                var index = parseInt(this.id.charAt(9));
+
+                if(choose_troef_allowed){
+
+                }
+                if(play_card_allowed){
+
+                }
+            });
+
+            function set_cards(cards) {
+                for (i=0; i<8; i++){
+                    console.log('adding a card');
+			        var c = cards[i].charAt(0);
+
+			        if(c === "S"){
+			            //Spade
+			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2660');
+			        }
+			        if(c === "H"){
+			            //Heart
+			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2665');
+			        }
+			        if(c === "D"){
+                        //Diamond
+			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2666');
+			        }
+			        if(c === "C"){
+			            //Club
+			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2663');
+			        }
+
+			        $("#play_card" + i.toString() + "_bottom_wrapper").text(cards[i].slice(1));
+                }
+            }
 
             $('form#give_info_form').submit(function(event) {
-                socket.emit('client_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(), table_location : $('#table_location_input').val()});
+                socket.emit('client_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(),
+                                                table_location : $('#table_location_input').val(), team_name: $('#team_name_input').val(),});
 
                 return false;
             });
@@ -37,7 +108,7 @@
 <div id="form_page">
 
     <div id="form_page_wrapper">
-        <div id="info_form_stylisticstop"><img src="{{ url_for('static',filename='images/topelement.png) }}"></div>
+        <div id="info_form_stylisticstop"><img src="{{ url_for('static',filename='images/topelement.png') }}"></div>
         <div id="info_form_wrapper">
             <form id="give_info_form" method="POST" action='#'>
                 Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
@@ -53,29 +124,39 @@
                  <input type="submit" value="Submit" id="submit_button" class=".semi-square ">
             </form>
         </div>
-        <div id="info_form_stylisticsbottom"><img src="topelement.png"></div>
+        <div id="info_form_stylisticsbottom"><img src="{{ url_for('static',filename='images/topelement.png') }}"></div>
     </div>
 
 </div>
 <div id="play_page">
-    <div id="troef_box"><span>&hearts;</div>
+    <div id="troef_box"><span></div>
+    <div id="score_box">
+        <div id="score_name_wrapper">
+		    <div id="score_name_team0" class="score_name_team"></div>
+            <div id="score_name_team1" class="score_name_team"></div>
+	    </div>
+        <div id="score_value_wrapper">
+		    <div id="score_value_team0" class="score_value_team"></div>
+            <div id="score_value_team1" class="score_value_team"></div>
+	    </div>
+    </div>
     <div id="playing_box">
         <div id="table_card_wrapper" class="">
             <div id="table_card0_wrapper" class="table_card">
-                <div id="table_card0_top_wrapper" class="card_top">&spades;</div>
-                <div id="table_card0_bottom_wrapper" class="card_bottom">9</div>
+                <div id="table_card0_top_wrapper" class="card_top"></div>
+                <div id="table_card0_bottom_wrapper" class="card_bottom"></div>
             </div>
             <div id="table_card1_wrapper" class="table_card table_middle_card">
-                <div id="table_card1_top_wrapper" class="card_top">&spades;</div>
-                <div id="table_card1_bottom_wrapper" class="card_bottom">9</div>
+                <div id="table_card1_top_wrapper" class="card_top"></div>
+                <div id="table_card1_bottom_wrapper" class="card_bottom"></div>
             </div>
             <div id="table_card2_wrapper" class="table_card table_middle_card">
-                <div id="table_card2_top_wrapper" class="card_top">&spades;</div>
-                <div id="table_card2_bottom_wrapper" class="card_bottom">9</div>
+                <div id="table_card2_top_wrapper" class="card_top"></div>
+                <div id="table_card2_bottom_wrapper" class="card_bottom"></div>
             </div>
             <div id="table_card3_wrapper" class="table_card">
-                <div id="table_card3_top_wrapper" class="card_top">&spades;</div>
-                <div id="table_card3_bottom_wrapper" class="card_bottom">9</div>
+                <div id="table_card3_top_wrapper" class="card_top"></div>
+                <div id="table_card3_bottom_wrapper" class="card_bottom"></div>
             </div>
         </div>
     </div>
@@ -84,32 +165,36 @@
     </div>
     <div id="player_card_wrapper">
         <div id="play_card0_wrapper" class="playing_card">
-            <div id="play_card0_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card0_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card0_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card0_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
         <div id="play_card1_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card1_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card1_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card1_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card1_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
         <div id="play_card2_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card2_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card2_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card2_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card2_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
         <div id="play_card3_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card3_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card3_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card3_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card3_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
         <div id="play_card4_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card4_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card4_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card4_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card4_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
         <div id="play_card5_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card5_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card5_bottom_wrapper" class="card_bottom">9</div>
+            <div id="play_card5_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card5_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
-        <div id="play_card6_wrapper" class="playing_card">
-            <div id="play_card6_top_wrapper" class="card_top">&spades;</div>
-            <div id="play_card6_bottom_wrapper" class="card_bottom">9</div>
+        <div id="play_card6_wrapper" class="playing_card playing_middle_card">
+            <div id="play_card6_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card6_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+        </div>
+        <div id="play_card7_wrapper" class="playing_card">
+            <div id="play_card7_top_wrapper" class="card_top playing_card_top">&spades;</div>
+            <div id="play_card7_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
         </div>
     </div>
 </div>

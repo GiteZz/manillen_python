@@ -1,12 +1,12 @@
 class player:
 
-    def __init__(self, name, sid):
+    def __init__(self, name, sid, position=None, team=None, game=None, cards=None):
         self.name = name
         self.sid = sid
-        self.team = None
-        self.cards = None
-        self.position = None
-        self.game = None
+        self.team = team
+        self.cards = cards
+        self.position = position
+        self.game = game
 
     def set_game(self, game):
         self.game = game
@@ -14,7 +14,7 @@ class player:
     def add_team(self, team):
         self.team = team
 
-    def give_cards(self, cards):
+    def set_cards(self, cards):
         self.cards = cards
 
     def use_card(self, card):
@@ -27,6 +27,7 @@ class team:
         self.players = []
         self.score = 0
         self.game = None
+        self.started = False
 
     def set_game(self, game):
         self.game = game
@@ -53,14 +54,13 @@ class game:
     def add_team(self, team):
         self.teams.append(team)
         #players get placed directly in their playing order, add_team sets team as last by append
-        for i in len(team.players):
+        for i in range(len(team.players)):
             self.players[len(self.teams) - 1 + i] = team.players[i]
 
     def update_team(self, team):
         index = self.teams.index(team)
         for player in team.players:
-            if player not in self.players:
-                self.players[index + team.players.index(player)] = player
+            self.players[player.position] = player
 
     def team_exists(self, team_name):
         for team in self.teams:
@@ -68,3 +68,21 @@ class game:
                 return team
 
         return None
+
+    def get_team(self, name):
+        for team in self.teams:
+            if team.name == name:
+                return team
+        return None
+
+    def add_player(self, player):
+        self.players[player.position] = player
+
+    def __len__(self):
+        amount = 0
+        for player in self.players:
+            amount += player is not None
+        return amount
+    def set_default_indices(self):
+        self.round_play_offset = 0
+        self.round_start_pos = 1

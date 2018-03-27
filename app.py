@@ -1,16 +1,24 @@
 import socketio
-from manillen_classes import player,team, game
+from manillen_classes import player, team, game
 import eventlet
+import manillen_const
+import cards
 import eventlet.wsgi
 from flask import Flask, render_template
 import logging
-
+from test_manillen import test_class
 
 sio = socketio.Server()
 app = Flask(__name__)
-gameset = {}
+game_set = {}
+game_set_sid = {}
 socket_list = []
 game_list = []
+
+test = True
+if test:
+    test_c = test_class("test_database.txt")
+
 
 @app.route('/')
 def index():
@@ -21,22 +29,28 @@ def index():
 @sio.on('client_connect', namespace='/')
 def client_connect(sid):
     socket_list.append(sid)
+    if not test:
+        sio.emit('ask_info', room=sid)
+    else:
+        sio.emit('give_info', test_c.give_test_set(), room=sid)
     print("connected new client, amount of connected clients is: " + str(len(socket_list)))
 
 
 @sio.on('client_info_send', namespace='/')
 def client_send_info(sid, data):
+    print("client sent info, adding player")
     table_name = data["table_name"]
     team_name = data["team_name"]
-    position = data["position"]
+    position = data["table_location"]
     player_name = data["player_name"]
 
-    this_player = player(player_name, sid)
-    if table_name in game_set:
-        this_game = game_set[table_name]
-        team = this_game.team_exists(team_name)
-        if team is None:
-            this_team = team(team_name)
+    player_game = create_player(player_name, team_name, table_name, position, sid)
+
+    sio.emit('wait_other_players', room=sid)
+    print("Amount of players in this game: " + str(len(player_game)))
+
+    if len(player_game) == 4:
+        start_play(player_game)
 
 
 @sio.on('chat message', namespace='/')
@@ -48,49 +62,54 @@ def message(sid, data):
 @sio.on('disconnect', namespace='/')
 def disconnect(sid):
     socket_list.remove(sid)
-    remove_player(sid)
     print("client left, amount of connected clients is: " + str(len(socket_list)))
 
 
-def play(table_name):
-    if table_set[table_name]["troef"] is None:
-        #troef should be chosen
-        sio.emit('server_ask_troef', room=table_set[table_name]["players_sid"][table_set[table_name]["troef_choser"]])
+def start_play(game):
+    player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True})
+    for i in range(4):
+        game.players[i].set_cards(player_cards[i])
+        sio.emit('set_cards', player_cards[i], room=game.players[i].sid)
+    game.set_default_indices()
+    play_round(game)
 
 
-def add_player_to_table(table_name, player_name, pos, sid):
-    if table_name in table_set:
-        if table_set[table_name]["players"][pos] is None:
-            table_set[table_name]["players_name"][pos] =  player_name
-            table_set[table_name]["players_sid"][pos] = sid
-            table_set[table_name]["amount_players"] += 1
-            player_set[sid] = {"player_name":player_name, "table_name":table_name}
-        else:
-            print("add_player_to_table: position already chosen")
+def play_round(game):
+    for team in game.teams:
+        if team.score > manillen_const.score_end:
+            end_game(game)
+    troef_choser = game.players[game.round_start_pos]
+    game.round_start_pos += 1
+    sio.emit('choose_troef', room=troef_choser.sid)
+    
+
+def end_game(game):
+    a =5
+
+
+def create_player(player_name, team_name, table_name, position, sid):
+    this_player = player(player_name, sid, position=int(position))
+    if table_name in game_set:
+        this_game = game_set[table_name]
     else:
-        add_new_table(table_name)
-        add_player_to_table(table_name, player_name, pos, sid)
+        this_game = game(table_name)
+        game_set[table_name] = this_game
 
+    this_player.set_game(this_game)
 
-def remove_player(sid):
-    #check if socket was player or not
-    if sid in player_set:
-        table_name = player_set[sid]["table_name"]
-        player_name = player_set[sid]["player_name"]
-        remove_player_table(table_name, player_name)
+    this_team = this_game.get_team(team_name)
+    # team doesn't exist
+    if this_team is None:
+        this_team = team(team_name)
+        this_game.add_team(this_team)
+        this_team.set_game(this_game)
 
+    this_team.add_player(this_player)
+    this_player.add_team(this_team)
+    game_set_sid[sid] = this_game
+    this_game.add_player(this_player)
 
-def remove_player_table(table_name, player_name):
-    table_set[table_name]["amount_players"] -= 1
-    table_position = table_set[table_name]["players_name"].index(player_name)
-    table_set[table_name]["players_name"][table_position] = None
-    table_set[table_name]["players_sid"][table_position] = None
-
-
-def add_new_table(name):
-    table_set[name]={"players_name":[None]*4, "players_sid":[None]*4,
-                     "score":[0,0], "troef_choser":0, "troef": None,"cards_on_table":[],
-                     "round_starting_pos":1, "round_play_offset":0, "amount_players":0}
+    return this_game
 
 
 if __name__ == '__main__':
@@ -98,4 +117,4 @@ if __name__ == '__main__':
     app = socketio.Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
-    eventlet.wsgi.server(eventlet.listen(('',5000)), app)
+    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
