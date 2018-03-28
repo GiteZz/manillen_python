@@ -12,12 +12,25 @@
     <script type="text/javascript" charset="utf-8">
 
         $(document).ready(function(){
+
+
             namespace = '/';
 
             choose_troef_allowed = false;
             play_card_allowed = false
 
             var play_cards;
+
+            $(document).on('click', '.playing_card, .playing_card_bottom, .playing_card_top', function(){
+                var index = parseInt(this.id.charAt(9));
+
+                if(choose_troef_allowed){
+                    socket.emit('answer_troef', cards[index])
+                }
+                if(play_card_allowed){
+
+                }
+            });
 
             var socket = io.connect('http://' + '0.0.0.0:5000' + namespace);
             socket.on('wait_other_players', function() {
@@ -48,24 +61,23 @@
             });
             socket.on('set_game_info', function(data){
                 //suits = ['H','D','C','S']
-                play_cards = data["cards"]
-                set_cards(play_cards)
+                play_cards = data["cards"];
+                set_cards(play_cards);
+                $("#score_name_team0").text(data["teams"][0]);
+                $("#score_name_team1").text(data["teams"][1]);
 
             });
             socket.on('choose_troef', function () {
-
+                choose_troef_allowed = true
+                console.log("asked for troef")
+                give_command("Choose strike");
             });
 
-            $(document).on('click', '.playing_card, . playing_card_bottom, . playing_card_top', function(){
-                var index = parseInt(this.id.charAt(9));
+            function give_command(command_string){
+                $("#give_command").text(command_string);
 
-                if(choose_troef_allowed){
+            }
 
-                }
-                if(play_card_allowed){
-
-                }
-            });
 
             function set_cards(cards) {
                 for (i=0; i<8; i++){
@@ -96,6 +108,7 @@
             $('form#give_info_form').submit(function(event) {
                 socket.emit('client_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(),
                                                 table_location : $('#table_location_input').val(), team_name: $('#team_name_input').val(),});
+                $("#info_wrapper").text($('#player_name_input').val() + '\n' + $('#team_name_input').val());
 
                 return false;
             });
@@ -129,6 +142,8 @@
 
 </div>
 <div id="play_page">
+    <div id="info_wrapper"></div>
+    <div id="give_command"></div>
     <div id="troef_box"><span></div>
     <div id="score_box">
         <div id="score_name_wrapper">

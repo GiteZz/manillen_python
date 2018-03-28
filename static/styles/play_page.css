@@ -177,3 +177,18 @@ span {
     float: left;
     text-align: center;
 }
+#give_command{
+    position:absolute;
+    width: 50%;
+    left:25%;
+    top: 55%;
+    height: 10%;
+    font-size:7vh;
+    text-align: center;
+}
+#info_wrapper{
+    position: absolute;
+    right: 0;
+    width: 9vw;
+    top:10vw;
+}

@@ -1,8 +1,8 @@
 class player:
 
-    def __init__(self, name, sid, position=None, team=None, game=None, cards=None):
+    def __init__(self, name, id, position=None, team=None, game=None, cards=None):
         self.name = name
-        self.sid = sid
+        self.id = id
         self.team = team
         self.cards = cards
         self.position = position
@@ -20,8 +20,8 @@ class player:
     def use_card(self, card):
         self.cards.remove(card)
 
-class team:
 
+class team:
     def __init__(self, name):
         self.name = name
         self.players = []
@@ -41,8 +41,8 @@ class team:
     def remove_player(self, player):
         self.players.remove(player)
 
-class game:
 
+class game:
     def __init__(self, table_name):
         self.table_name = table_name
         self.players = [None] * 4
@@ -83,6 +83,7 @@ class game:
         for player in self.players:
             amount += player is not None
         return amount
+
     def set_default_indices(self):
-        self.round_play_offset = 0
-        self.round_start_pos = 1
+        self.round_play_offset = 1
+        self.round_start_pos = 0
