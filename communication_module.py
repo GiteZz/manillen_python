@@ -1,12 +1,18 @@
 class communication_module:
-    def __init__(self):
+    def __init__(self, socketio_server):
         # engine functions
-        self.answer_troef = None
-        self.answer_card = None
-        self.add_player = None
+        self.engine_functions = {}
+        self.sio = socketio_server
 
-        # comm functions
-        self.choose_troef = None
-        self.play_card = None
-        self.send_game_info = None
-        self.wait_other_players = None
+    def send_client(self, command, id, data=None):
+        if data is None:
+            self.sio.emit(command, room=id)
+        else:
+            self.sio.emit(command, data, room=id)
+
+    def send_engine(self, command, id, data):
+        self.engine_functions[command](id, data)
+
+    def add_engine_function(self, command, function):
+        self.engine_functions[command] = function
+

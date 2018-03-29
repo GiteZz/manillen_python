@@ -28,6 +28,7 @@ class team:
         self.score = 0
         self.game = None
         self.started = False
+        self.cards = []
 
     def set_game(self, game):
         self.game = game
@@ -42,6 +43,7 @@ class team:
         self.players.remove(player)
 
 
+
 class game:
     def __init__(self, table_name):
         self.table_name = table_name
@@ -50,6 +52,10 @@ class game:
         self.troef_chooser_pos = 0
         self.round_start_pos = 1
         self.round_play_offset = 0
+        self.troef_choosen = False
+        self.troef = None
+        self.table_cards = []
+        self.cards_played = 0
 
     def add_team(self, team):
         self.teams.append(team)

@@ -44,15 +44,15 @@ def ask_client_info(sid, testing=test_game):
 
 @sio.on('client_info_send', namespace='/')
 def client_send_info(sid, data):
-    print("client sent info, adding player")
-    table_name = data["table_name"]
-    team_name = data["team_name"]
-    position = data["table_location"]
-    player_name = data["player_name"]
+    print("server: client sent info, adding player")
 
     # sid is considered player id, is used with other thing generate unique id
-    engine.add_player(player_name, team_name, table_name, position, sid)
+    comm_module.send_engine("add_player", sid, data)
 
+
+@sio.on('answer_card', namespace='/')
+def client_answer_card(sid, data):
+    comm_module.send_engine("answer_card", sid, data)
 
 @sio.on('disconnect', namespace='/')
 def disconnect(sid):
@@ -62,8 +62,7 @@ def disconnect(sid):
 
 @sio.on('answer_troef', namespace='/')
 def answer_troef(sid, card):
-    id = sid_set[sid]
-    comm_module.answer_troef(id, card)
+    comm_module.send_engine("answer_troef", sid, card)
 
 
 def choose_troef(id):
@@ -77,12 +76,7 @@ def set_game_info(id, data):
     sio.emit('set_game_info', data, room=id)
 
 if __name__ == '__main__':
-    comm_module = communication_module()
-
-    comm_module.choose_troef = choose_troef
-    comm_module.wait_other_players = wait_other_players
-
-    comm_module.set_game_info = set_game_info
+    comm_module = communication_module(sio)
 
     engine = game_engine.engine(comm_module)
 

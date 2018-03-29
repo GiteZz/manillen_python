@@ -17,18 +17,31 @@
             namespace = '/';
 
             choose_troef_allowed = false;
-            play_card_allowed = false
+            play_card_allowed = false;
 
+            sent_troef = false;
+            sent_card = false;
             var play_cards;
+
+            dict = {
+                'S': '\u2660',
+                'H': '\u2665',
+                'D': '\u2666',
+                'C': '\u2663'
+            };
 
             $(document).on('click', '.playing_card, .playing_card_bottom, .playing_card_top', function(){
                 var index = parseInt(this.id.charAt(9));
 
-                if(choose_troef_allowed){
-                    socket.emit('answer_troef', cards[index])
+                if(choose_troef_allowed && !sent_troef){
+                    console.log("answering troef");
+                    socket.emit('answer_troef', play_cards[index]);
+                    sent_troef = true;
                 }
-                if(play_card_allowed){
-
+                if(play_card_allowed && !sent_card){
+                    sent_card = true;
+                    socket.emit('answer_card', play_cards[index]);
+                    console.log("answering card");
                 }
             });
 
@@ -56,6 +69,41 @@
                 $('#submit_button').trigger('click');
 
             });
+            socket.on('new_table_card', function(data){
+                card = data["card"]
+                index = data["index"]
+
+                var c = card.charAt(0);
+                $("#table_card" + index.toString() + "_top_wrapper").text(dict[c]);
+
+                $("#table_card" + index.toString() + "_bottom_wrapper").text(card.slice(1));
+            });
+            socket.on('valid_card', function(){
+                play_card_allowed = false
+                give_command("")
+            });
+            socket.on('invalid_card', function(){
+                play_card_allowed = true;
+                sent_card = false;
+                give_command("invalid");
+            });
+
+            socket.on('invalid_troef', function(){
+                sent_troef = false;
+               give_command("invalid, choose again");
+            });
+            socket.on('play_card', function(){
+                console.log("allowed to play card");
+                play_card_allowed = true;
+                sent_card = false;
+                give_command("choose card");
+            });
+            socket.on('send_troef', function(data){
+                choose_troef_allowed = false;
+                give_command("")
+                 $("#troef_box").text(dict[data]);
+            });
+
             socket.on('connect', function() {
                 socket.emit('client_connect');
             });
@@ -83,23 +131,7 @@
                 for (i=0; i<8; i++){
                     console.log('adding a card');
 			        var c = cards[i].charAt(0);
-
-			        if(c === "S"){
-			            //Spade
-			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2660');
-			        }
-			        if(c === "H"){
-			            //Heart
-			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2665');
-			        }
-			        if(c === "D"){
-                        //Diamond
-			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2666');
-			        }
-			        if(c === "C"){
-			            //Club
-			        	$("#play_card" + i.toString() + "_top_wrapper").text('\u2663');
-			        }
+                    $("#play_card" + i.toString() + "_top_wrapper").text(dict[c]);
 
 			        $("#play_card" + i.toString() + "_bottom_wrapper").text(cards[i].slice(1));
                 }
