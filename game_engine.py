@@ -6,15 +6,16 @@ import cards
 
 
 class engine:
-    def __init__(self, commlayer, testing=False):
+    def __init__(self, comm= None, testing=False):
         print("created engine")
         self.game_set = {}
         self.id_set_games = {}
         self.id_set_player = {}
         self.game_list = []
         self.testing = testing
-        self.commlayer = commlayer
-        self.initialise_commlayer()
+        self.commlayer = comm
+        if comm is not None:
+            self.initialise_commlayer()
         self.valuedict = {"10": 5, "A": 4, "K": 3, "Q": 2, "J": 1, "9": 0, "8": 0, "7": 0}
         self.comparevalue = {"10": 7, "A": 6, "K": 5, "Q": 4, "J": 3, "9": 2, "8": 1, "7": 0}
 
@@ -54,11 +55,11 @@ class engine:
             for team in game.teams:
                 if team.score > manillen_const.score_end:
                     self.end_game(game)
-        troef_choser = game.players[game.round_start_pos]
+        troef_choser = game.players[game.troef_chooser_pos]
         self.commlayer.send_client("choose_troef", troef_choser.id)
 
     def play_cards(self, game):
-        if game.round_play_offset == 5:
+        if game.round_play_offset == 4:
             # see to which team the cards should go
             troef_active = False
             winning_index = 0
@@ -81,6 +82,8 @@ class engine:
             game.round_play_offset = 0
             game.cards_played += 1
 
+            self.send_all_players("clear_board", game)
+
         if game.cards_played == 8:
             self.play_round(game)
 
@@ -91,35 +94,40 @@ class engine:
     def end_game(self, game):
         a =5
 
-    def receive_card(self, id, data):
+    def send_all_players(self, command, game):
+        for player in game.players:
+            self.commlayer.send_client(command, player.id)
+
+    def receive_card(self, id, card):
         print("engine: received card")
         #check if valid card and allowed to play
         this_game = self.id_set_games[id]
         this_player = self.id_set_player[id]
 
-        card_from_player = data in this_player.cards
+        card_from_player = card in this_player.cards
         should_be_index = this_game.players.index(this_player)
         current_index = (this_game.round_start_pos + this_game.round_play_offset)%4
         allowed = should_be_index == current_index
 
-        if allowed and card_from_player and self.card_allowed(data, this_game, this_player):
+        if allowed and card_from_player and self.card_allowed(card, this_game.table_cards, this_player.cards, this_game.troef):
             print("engine: card is valid")
             self.commlayer.send_client("valid_card", id)
-            this_game.table_cards.append(data)
+            this_game.table_cards.append(card)
             for player in this_game.players:
-                self.commlayer.send_client("new_table_card", player.id, {"card": data, "index": len(this_game.table_cards)-1})
+                self.commlayer.send_client("new_table_card", player.id, {"card": card, "index": len(this_game.table_cards) - 1})
 
             this_game.round_play_offset += 1
+            this_player.cards.remove(card)
             self.play_cards(this_game)
         else:
             print("engine: card is NOT valid")
             self.commlayer.send_client("invalid_card", id)
 
-    def card_allowed(self, card, game, player):
-        if len(game.table_cards) == 0:
+    def card_allowed(self, card, table_cards, player_cards, troef):
+        if len(table_cards) == 0:
             return True
         else:
-            starting_suit = game.table_cards[0][0]
+            starting_suit = table_cards[0][0]
             player_suit = card[0]
 
             player_has_suit = False
@@ -128,14 +136,14 @@ class engine:
             player_max_troef = None
             player_max_suit = None
 
-            for player_card in player.cards:
+            for player_card in player_cards:
                 if player_card[0] == starting_suit:
                     player_has_suit = True
 
-                if player_card[0] == game.troef:
+                if player_card[0] == troef:
                     player_has_troef = True
 
-                if player_card[0] == game.troef and (player_max_troef is None or self.comparevalue[player_card[1:]] > self.comparevalue[player_max_troef[1:]]):
+                if player_card[0] == troef and (player_max_troef is None or self.comparevalue[player_card[1:]] > self.comparevalue[player_max_troef[1:]]):
                     player_max_troef = player_card
 
                 if player_card[0] == starting_suit and (player_max_suit is None or self.comparevalue[player_card[1:]] > self.comparevalue[player_max_suit[1:]]):
@@ -149,7 +157,7 @@ class engine:
             # if he has a troef he should buy the card
 
             # check current team owner
-            your_team = game.round_play_offset%2
+            your_team = len(table_cards)%2
             # get all troef on table
             max_troef_index = None
             all_troef = []
@@ -157,16 +165,16 @@ class engine:
             all_suits = []
 
             # find index of highest troef card on the table and the index of the highest starting suit
-            for i in range(len(game.table_cards)):
-                if game.table_cards[i][0] == game.troef:
-                    if max_troef_index is None or self.comparevalue[game.table_cards[i][1:]] > self.comparevalue[game.table_cards[max_troef_index][1:]]:
+            for i in range(len(table_cards)):
+                if table_cards[i][0] == troef:
+                    if max_troef_index is None or self.comparevalue[table_cards[i][1:]] > self.comparevalue[table_cards[max_troef_index][1:]]:
                         max_troef_index = i
-                    all_troef.append(game.table_cards[i])
+                    all_troef.append(table_cards[i])
 
-                if game.table_cards[i][0] == starting_suit:
-                    if max_suit_index is None or self.comparevalue[game.table_cards[i][1:]] > self.comparevalue[game.table_cards[max_suit_index][1:]]:
-                        max_troef_index = i
-                    all_suits.append(game.table_cards[i])
+                if table_cards[i][0] == starting_suit:
+                    if max_suit_index is None or self.comparevalue[table_cards[i][1:]] > self.comparevalue[table_cards[max_suit_index][1:]]:
+                        max_suit_index = i
+                    all_suits.append(table_cards[i])
 
             # check if there's a troef on the table
             if max_troef_index is not None:
@@ -176,8 +184,8 @@ class engine:
                 else:
                     # check if you have higher troef
                     higher_troefs = []
-                    for player_card in player.cards:
-                        if player_card[0] == game.troef and self.comparevalue[player_card[1:]] > self.comparevalue[game.table_cards[max_troef_index][1:]]:
+                    for player_card in player_cards:
+                        if player_card[0] == troef and self.comparevalue[player_card[1:]] > self.comparevalue[table_cards[max_troef_index][1:]]:
                             higher_troefs.append(player_card)
 
                     # player has no troef that are higher, so allowed to play anything
@@ -192,8 +200,8 @@ class engine:
                     if player_has_suit:
                         # player should go higher then other team if possible
                         higher_suits = []
-                        for player_card in player.cards:
-                            if player_card[0] == starting_suit and self.comparevalue[player_card[1:]] > self.comparevalue[game.table_cards[max_suit_index][1:]]:
+                        for player_card in player_cards:
+                            if player_card[0] == starting_suit and self.comparevalue[player_card[1:]] > self.comparevalue[table_cards[max_suit_index][1:]]:
                                 higher_suits.append(player_card)
                         if len(higher_suits) == 0:
                             return True
@@ -202,7 +210,7 @@ class engine:
                     else:
                         # player should use troef is he has it
                         # player has troef, but doesn't use it
-                        if player_has_troef and not card[0] == game.troef:
+                        if player_has_troef and not card[0] == troef:
                             return False
             return True
 
@@ -258,6 +266,21 @@ class engine:
         self.commlayer.send_client("wait_other_players", id)
 
         return id
+
+
+if __name__ == "__main__":
+    print("========== testing engine ==========")
+    en = engine()
+    print("========== card allowed ==========")
+    # card, table cards, player_cards, troef
+    # player should play K10
+    print(en.card_allowed("KJ", ["K8", "KQ"], ["K10", "H9", "KJ"], 'H') == False)
+    # player should buy
+    print(en.card_allowed("S10", ["K8", "KQ"], ["S10", "H9", "SJ"], 'H') == False)
+    #valid play
+    print(en.card_allowed("K10", ["K8", "KQ"], ["S10", "K10", "KJ"], 'H') == True)
+    #valid play
+    print(en.card_allowed("S10", ["KQ", "K8"], ["S10", "H9", "SJ"], 'H') == True)
 
 
 

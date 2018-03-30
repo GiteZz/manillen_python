@@ -91,5 +91,5 @@ class game:
         return amount
 
     def set_default_indices(self):
-        self.round_play_offset = 1
-        self.round_start_pos = 0
+        self.round_play_offset = 0
+        self.round_start_pos = 1

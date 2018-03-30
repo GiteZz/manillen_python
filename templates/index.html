@@ -22,6 +22,7 @@
             sent_troef = false;
             sent_card = false;
             var play_cards;
+            card_played = -1;
 
             dict = {
                 'S': '\u2660',
@@ -40,6 +41,7 @@
                 }
                 if(play_card_allowed && !sent_card){
                     sent_card = true;
+                    card_played = index;
                     socket.emit('answer_card', play_cards[index]);
                     console.log("answering card");
                 }
@@ -79,7 +81,9 @@
                 $("#table_card" + index.toString() + "_bottom_wrapper").text(card.slice(1));
             });
             socket.on('valid_card', function(){
-                play_card_allowed = false
+                play_card_allowed = false;
+                $("#play_card" + card_played.toString() + "_top_wrapper").text("");
+                $("#play_card" + card_played.toString() + "_bottom_wrapper").text("");
                 give_command("")
             });
             socket.on('invalid_card', function(){
@@ -107,6 +111,14 @@
             socket.on('connect', function() {
                 socket.emit('client_connect');
             });
+
+            socket.on('clear_board', function () {
+                for(i = 0; i < 4; i++){
+                    $("#table_card" + i.toString() + "_top_wrapper").text();
+                    $("#table_card" + i.toString() + "_bottom_wrapper").text();
+                }
+            });
+
             socket.on('set_game_info', function(data){
                 //suits = ['H','D','C','S']
                 play_cards = data["cards"];
