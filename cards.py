@@ -5,11 +5,17 @@ import random
 #max: same as min
 #allowable_suits: give suits that are allowed, expects array, if not defined all 4 are use
 #remove_suits: start with the standard 4/ allowed suits and remove some, array or single el
+
+suit_sort_dict = {"H" : 0, "D": 1, "C" : 2, "S": 3}
+comparevalue = {"10": 7, "A": 6, "K": 5, "Q": 4, "J": 3, "9": 2, "8": 1, "7": 0}
+
+def get_card_value(item):
+    return suit_sort_dict[item[0]]*10 + 10 - comparevalue[item[1:]]
+
+
 def getCards(options=None):
     suits = ['H','D','C','S']
     symbols = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"]
-
-
 
     card_array = []
 
@@ -89,9 +95,19 @@ def getCards(options=None):
             if options["shuffle"]:
                 random.shuffle(card_array)
 
+        split_stack_option = None
         if "split_stack" in options:
             amount = options["split_stack"]
+            split_stack_option = True
             card_array = split_stack(card_array, amount)
+
+        if "sorted" in options:
+            if options["sorted"]:
+                if split_stack_option is not None:
+                    for i in range(len(card_array)):
+                        card_array[i] = sorted(card_array[i], key=get_card_value)
+                else:
+                    card_array = sorted(card_array, key=comparevalue)
 
         return card_array
 

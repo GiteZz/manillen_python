@@ -16,3 +16,6 @@ class communication_module:
     def add_engine_function(self, command, function):
         self.engine_functions[command] = function
 
+    def add_engine_function_dict(self, engine_dict):
+        self.engine_functions = engine_dict
+

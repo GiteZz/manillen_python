@@ -3,36 +3,50 @@ from manillen_classes import player, team, game
 
 import manillen_const
 import cards
-
+import time
+import logging
 
 class engine:
-    def __init__(self, comm= None, testing=False):
-        print("created engine")
+    def __init__(self, testing=False):
+        logging.basicConfig(level=logging.INFO)
+        self.logger_engine = logging.getLogger('engine_working')
+        self.logger_game = logging.getLogger('engine_game')
+
+        self.handler = logging.FileHandler('logs/games.log')
+        self.handler.setLevel(logging.INFO)
+
+        formatter = logging.Formatter('%(asctime)s ,%(message)s')
+        self.handler.setFormatter(formatter)
+
+        self.logger_game.addHandler(self.handler)
+
+        self.logger_engine.info("created engine")
+
         self.game_set = {}
         self.id_set_games = {}
         self.id_set_player = {}
         self.game_list = []
         self.testing = testing
-        self.commlayer = comm
-        if comm is not None:
-            self.initialise_commlayer()
+
         self.valuedict = {"10": 5, "A": 4, "K": 3, "Q": 2, "J": 1, "9": 0, "8": 0, "7": 0}
         self.comparevalue = {"10": 7, "A": 6, "K": 5, "Q": 4, "J": 3, "9": 2, "8": 1, "7": 0}
 
+        self.function_dict = {"add_player": self.add_player, "answer_troef": self.receive_troef, "answer_card": self.receive_card}
 
-    def initialise_commlayer(self):
-        self.commlayer.add_engine_function("add_player", self.add_player)
-        self.commlayer.add_engine_function("answer_troef", self.receive_troef)
-        self.commlayer.add_engine_function("answer_card", self.receive_card)
+
+    def get_functions(self):
+        return self.function_dict
 
     def start_play(self, game):
-        player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True})
+        player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True, "sorted": True})
+
         team_names = [team.name for team in game.teams]
         for i in range(4):
             game.players[i].set_cards(player_cards[i])
-            self.commlayer.send_client("set_game_info", game.players[i].id, {"cards": player_cards[i], "teams": team_names})
+            game.players[i].send("set_game_info", data={"cards": player_cards[i], "teams": team_names})
 
         game.set_default_indices()
+
         self.play_round(game)
 
     def play_round(self, game):
@@ -55,8 +69,7 @@ class engine:
             for team in game.teams:
                 if team.score > manillen_const.score_end:
                     self.end_game(game)
-        troef_choser = game.players[game.troef_chooser_pos]
-        self.commlayer.send_client("choose_troef", troef_choser.id)
+        game.players[game.troef_chooser_pos].send("choose_troef")
 
     def play_cards(self, game):
         if game.round_play_offset == 4:
@@ -74,7 +87,7 @@ class engine:
                         troef_active = True
                     elif game.table_cards[i][0] == starting_suit and self.comparevalue[game.table_cards[i][1:]] > self.comparevalue[game.table_cards[winning_index][1:]]:
                         winning_index = i
-            print("engine: These cards were played: " + str(game.table_cards) + " and " + str(game.table_cards[winning_index]) + " won")
+            self.logger_engine.info(" These cards were played: " + str(game.table_cards) + " and " + str(game.table_cards[winning_index]) + " won")
 
             game.round_start_pos = (game.round_start_pos + winning_index)%4
             game.players[game.round_start_pos].team.cards.extend(game.table_cards)
@@ -88,18 +101,18 @@ class engine:
             self.play_round(game)
 
         else:
-            print("engine: sended play_card to player")
-            self.commlayer.send_client("play_card", game.players[(game.round_start_pos + game.round_play_offset)%4].id)
+            self.logger_engine.info(" sended play_card to player")
+            game.players[(game.round_start_pos + game.round_play_offset) % 4].send("play_card")
 
     def end_game(self, game):
         a =5
 
-    def send_all_players(self, command, game):
+    def send_all_players(self, command, game, data=None):
         for player in game.players:
-            self.commlayer.send_client(command, player.id)
+            player.send(command, data=data)
 
     def receive_card(self, id, card):
-        print("engine: received card")
+        self.logger_engine.info(" received card")
         #check if valid card and allowed to play
         this_game = self.id_set_games[id]
         this_player = self.id_set_player[id]
@@ -110,18 +123,21 @@ class engine:
         allowed = should_be_index == current_index
 
         if allowed and card_from_player and self.card_allowed(card, this_game.table_cards, this_player.cards, this_game.troef):
-            print("engine: card is valid")
-            self.commlayer.send_client("valid_card", id)
+            self.logger_engine.info(" card is valid")
+            this_player.send("valid_card")
             this_game.table_cards.append(card)
-            for player in this_game.players:
-                self.commlayer.send_client("new_table_card", player.id, {"card": card, "index": len(this_game.table_cards) - 1})
+
+            self.send_all_players("new_table_card", this_game, data= {"card": card, "index": len(this_game.table_cards) - 1})
 
             this_game.round_play_offset += 1
             this_player.cards.remove(card)
+
+            self.logger_game.info("card;" + str(this_player.position) + ";" + card)
+
             self.play_cards(this_game)
         else:
-            print("engine: card is NOT valid")
-            self.commlayer.send_client("invalid_card", id)
+            self.logger_engine.info(" card is NOT valid")
+            this_player.send("invalid_card")
 
     def card_allowed(self, card, table_cards, player_cards, troef):
         if len(table_cards) == 0:
@@ -175,9 +191,8 @@ class engine:
                     if max_suit_index is None or self.comparevalue[table_cards[i][1:]] > self.comparevalue[table_cards[max_suit_index][1:]]:
                         max_suit_index = i
                     all_suits.append(table_cards[i])
-
             # check if there's a troef on the table
-            if max_troef_index is not None:
+            if max_troef_index is not None and max_suit_index is None:
                 # your team currently has the hand, should not buy
                 if max_troef_index%2 == your_team:
                     return True
@@ -193,7 +208,7 @@ class engine:
                         return True
                     else:
                         return card in higher_troefs
-            elif max_suit_index is not None:
+            if max_suit_index is not None and max_troef_index is None:
                 if max_suit_index%2 == your_team:
                     return True
                 else:
@@ -224,21 +239,25 @@ class engine:
         allowed = not this_game.troef_choosen and this_game.players.index(this_player) == this_game.troef_chooser_pos
 
         if card_from_player and allowed:
-            for player in this_game.players:
-                self.commlayer.send_client("send_troef", player.id, data[0])
+            self.send_all_players("send_troef", this_game, data=data[0])
+
             this_game.troef_choosen = True
             this_game.troef = data[0]
+
+            self.logger_game.info("troef;" + str(this_player.position) + ";" + data)
+
             self.play_cards(this_game)
         else:
-            self.commlayer.send_client("invalid_troef", id)
+            this_player.send("invalid_troef")
 
     def add_player(self, id, data):
         table_name = data["table_name"]
         team_name = data["team_name"]
         position = data["table_location"]
         player_name = data["player_name"]
+        comm_module = data["comm_module"]
 
-        this_player = player(player_name, id, position=int(position))
+        this_player = player(player_name, id, comm_module, position=int(position))
         if table_name in self.game_set:
             this_game = self.game_set[table_name]
         else:
@@ -263,7 +282,7 @@ class engine:
         if len(this_game) == 4:
             self.start_play(this_game)
 
-        self.commlayer.send_client("wait_other_players", id)
+        this_player.send("wait_other_players")
 
         return id
 

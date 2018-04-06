@@ -18,7 +18,7 @@ engine = None
 
 comm_module = None
 
-test_game = True
+test_game = False
 if test_game:
     test_c = test_class("test_database.txt")
 
@@ -45,7 +45,7 @@ def ask_client_info(sid, testing=test_game):
 @sio.on('client_info_send', namespace='/')
 def client_send_info(sid, data):
     print("server: client sent info, adding player")
-
+    data["comm_module"] = comm_module
     # sid is considered player id, is used with other thing generate unique id
     comm_module.send_engine("add_player", sid, data)
 
@@ -78,7 +78,9 @@ def set_game_info(id, data):
 if __name__ == '__main__':
     comm_module = communication_module(sio)
 
-    engine = game_engine.engine(comm_module)
+    engine = game_engine.engine()
+
+    comm_module.add_engine_function_dict(engine.get_functions())
 
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)

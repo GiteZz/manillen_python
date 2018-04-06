@@ -113,10 +113,15 @@
             });
 
             socket.on('clear_board', function () {
-                for(i = 0; i < 4; i++){
-                    $("#table_card" + i.toString() + "_top_wrapper").text();
-                    $("#table_card" + i.toString() + "_bottom_wrapper").text();
-                }
+                setTimeout(function(){
+                    console.log("clearing board");
+                    for(i = 0; i < 4; i++){
+                        $("#table_card" + i.toString() + "_top_wrapper").text("");
+                        $("#table_card" + i.toString() + "_bottom_wrapper").text("");
+                    }
+
+                }, 1000);
+
             });
 
             socket.on('set_game_info', function(data){

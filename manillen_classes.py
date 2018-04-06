@@ -1,12 +1,13 @@
 class player:
 
-    def __init__(self, name, id, position=None, team=None, game=None, cards=None):
+    def __init__(self, name, id, comm_module, position=None, team=None, game=None, cards=None):
         self.name = name
         self.id = id
         self.team = team
         self.cards = cards
         self.position = position
         self.game = game
+        self.comm = comm_module
 
     def set_game(self, game):
         self.game = game
@@ -19,6 +20,9 @@ class player:
 
     def use_card(self, card):
         self.cards.remove(card)
+
+    def send(self, command, data=None):
+        self.comm.send_client(command, self.id, data=data)
 
 
 class team:
@@ -62,6 +66,8 @@ class game:
         #players get placed directly in their playing order, add_team sets team as last by append
         for i in range(len(team.players)):
             self.players[len(self.teams) - 1 + i] = team.players[i]
+
+
 
     def update_team(self, team):
         index = self.teams.index(team)
