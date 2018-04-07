@@ -1,5 +1,5 @@
 
-from manillen_classes import player, team, game
+from manillen_classes import player, team, game, viewer
 
 import manillen_const
 import cards
@@ -25,29 +25,32 @@ class engine:
         self.game_set = {}
         self.id_set_games = {}
         self.id_set_player = {}
-        self.game_list = []
+        self.id_set_viewer = {}
         self.testing = testing
 
         self.valuedict = {"10": 5, "A": 4, "K": 3, "Q": 2, "J": 1, "9": 0, "8": 0, "7": 0}
         self.comparevalue = {"10": 7, "A": 6, "K": 5, "Q": 4, "J": 3, "9": 2, "8": 1, "7": 0}
 
-        self.function_dict = {"add_player": self.add_player, "answer_troef": self.receive_troef, "answer_card": self.receive_card}
+        self.function_dict = {"add_player": self.add_player, "answer_troef": self.receive_troef, "answer_card": self.receive_card, "add_viewer": self.add_viewer, "disconnect": self.remove_subscriber, "reset_game": self.reset_game(), "keep_waiting" : self.keep_waiting}
 
 
     def get_functions(self):
         return self.function_dict
 
     def start_play(self, game):
-        player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True, "sorted": True})
+        if not game.started:
+            player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True, "sorted": True})
 
-        team_names = [team.name for team in game.teams]
-        for i in range(4):
-            game.players[i].set_cards(player_cards[i])
-            game.players[i].send("set_game_info", data={"cards": player_cards[i], "teams": team_names})
+            team_names = [team.name for team in game.teams]
+            for i in range(4):
+                game.players[i].set_cards(player_cards[i])
+                game.players[i].send("set_game_info", data={"cards": player_cards[i], "teams": team_names})
 
-        game.set_default_indices()
+            game.set_default_indices()
 
-        self.play_round(game)
+            self.play_round(game)
+        else:
+            self.logger_engine.error("game should be restarted, not started")
 
     def play_round(self, game):
 
@@ -107,9 +110,13 @@ class engine:
     def end_game(self, game):
         a =5
 
-    def send_all_players(self, command, game, data=None):
+    def send_all_players(self, command, game, data=None, viewer=True):
         for player in game.players:
             player.send(command, data=data)
+
+        if viewer:
+            for viewer in game.viewers:
+                viewer.send(command, data)
 
     def receive_card(self, id, card):
         self.logger_engine.info(" received card")
@@ -250,14 +257,33 @@ class engine:
         else:
             this_player.send("invalid_troef")
 
+    def add_viewer(self, id, data):
+        table_name = data["table_name"]
+        comm_module = data["comm_module"]
+
+        this_viewer = viewer(id, comm_module)
+
+        if table_name in self.game_set:
+            this_game = self.game_set[table_name]
+        else:
+            this_game = game(table_name)
+            self.game_set[table_name] = this_game
+
+        this_game.add_viewer(this_viewer)
+        self.id_set_viewer[id] = this_viewer
+        this_viewer.set_game(this_game)
+        this_viewer.send("allow_viewing")
+
     def add_player(self, id, data):
         table_name = data["table_name"]
         team_name = data["team_name"]
-        position = data["table_location"]
+        position_in_team = int(data["location_in_team"])
+        position_of_team = int(data["location_of_team"])
+        position = position_of_team + 2 * position_in_team
         player_name = data["player_name"]
         comm_module = data["comm_module"]
 
-        this_player = player(player_name, id, comm_module, position=int(position))
+        this_player = player(player_name, id, comm_module, position=position)
         if table_name in self.game_set:
             this_game = self.game_set[table_name]
         else:
@@ -269,7 +295,7 @@ class engine:
         this_team = this_game.get_team(team_name)
         # team doesn't exist
         if this_team is None:
-            this_team = team(team_name)
+            this_team = team(team_name, position_of_team)
             this_game.add_team(this_team)
             this_team.set_game(this_game)
 
@@ -280,12 +306,40 @@ class engine:
         this_game.add_player(this_player)
 
         if len(this_game) == 4:
-            self.start_play(this_game)
+            if not this_game.started:
+                this_game.started = True
+                self.start_play(this_game)
+
 
         this_player.send("wait_other_players")
 
         return id
 
+    def reset_game(self, id):
+        this_game = self.id_set_games[id]
+        this_game.reset()
+
+    def keep_waiting(self, id):
+
+    # can be player of viewer
+    def remove_subscriber(self, id):
+        self.logger_game.info("  player has left game")
+        if id in self.id_set_viewer:
+            this_viewer = self.id_set_viewer[id]
+            this_game = this_viewer.game
+
+            this_game.remove_viewer(this_viewer)
+            self.id_set_viewer.pop(id)
+        elif id in self.id_set_player:
+            this_player = self.id_set_player[id]
+            this_game = this_player.game
+
+            this_game.remove_player(this_player)
+            self.id_set_player.pop(id)
+            self.id_set_games.pop(id)
+            if this_game.started:
+                self.send_all_players("reset_game_lost_player", viewer=False)
+        a = 5
 
 if __name__ == "__main__":
     print("========== testing engine ==========")

@@ -49,7 +49,7 @@
 
             var socket = io.connect('http://' + '0.0.0.0:5000' + namespace);
             socket.on('wait_other_players', function() {
-                console.log("changing to play_page, waiting for other players...")
+                console.log("changing to play_page, waiting for other players...");
 
                 $('#form_page').css('display','none');
                 $('#play_page').css('display','block');
@@ -60,20 +60,21 @@
             });
             //This is a test function, used to give information to the client instead of asking it
             socket.on('give_info', function(data) {
-                console.log("This is a testing function")
+                console.log("This is a testing function");
                 console.log(data)
                 $('#table_name_input').val(data['game_name']);
                 $('#team_name_input').val(data['team_name']);
                 $('#player_name_input').val(data['player_name']);
-                $('#table_location_input').val(data['position']);
+                $('#team_player_location_input').val(data['team_player_location_input']);
+                $('#team_location_input').val(data['team_location_input']);
                 $('#form_page').css('display','block');
                 $('#play_page').css('display','none');
-                $('#submit_button').trigger('click');
+                $('#play_button').trigger('click');
 
             });
             socket.on('new_table_card', function(data){
-                card = data["card"]
-                index = data["index"]
+                card = data["card"];
+                index = data["index"];
 
                 var c = card.charAt(0);
                 $("#table_card" + index.toString() + "_top_wrapper").text(dict[c]);
@@ -104,7 +105,7 @@
             });
             socket.on('send_troef', function(data){
                 choose_troef_allowed = false;
-                give_command("")
+                give_command("");
                  $("#troef_box").text(dict[data]);
             });
 
@@ -132,9 +133,46 @@
                 $("#score_name_team1").text(data["teams"][1]);
 
             });
-            socket.on('choose_troef', function () {
-                choose_troef_allowed = true
-                console.log("asked for troef")
+
+            socket.on('allow_viewing', function(data){
+                //suits = ['H','D','C','S']
+                console.log("changing to play_page.");
+
+                $('#form_page').css('display','none');
+                $('#play_page').css('display','block');
+                $('#player_card_wrapper').css('display','none');
+
+            });
+
+            //$(document).on('click', '#play_button', function()
+
+            $("#play_button").click(function () {
+                socket.emit('player_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(),
+                                                location_in_team : $('#team_player_location_input').val(), team_name: $('#team_name_input').val(),location_of_team : $('#team_location_input').val()});
+                $("#info_wrapper").text($('#player_name_input').val() + '\n' + $('#team_name_input').val());
+            });
+
+            $("#view_button").click(function () {
+                socket.emit('viewer_info_send', {table_name: $('#table_name_input').val()});
+
+            });
+
+            $("#reset_button").click(function () {
+                socket.emit('reset_game');
+                $("#reset_box").css('display','none');
+            });
+            $("#wait_to_button").click(function () {
+                socket.emit('keep_waiting');
+                $("#reset_box").css('display','none');
+            });
+            socket.on('reset_game_lost_player', function () {
+                $("#reset_box").css('display','block');
+            });
+
+
+            socket.on('play_button', function () {
+                choose_troef_allowed = true;
+                console.log("asked for troef");
                 give_command("Choose strike");
             });
 
@@ -142,6 +180,7 @@
                 $("#give_command").text(command_string);
 
             }
+
 
 
             function set_cards(cards) {
@@ -153,13 +192,10 @@
 			        $("#play_card" + i.toString() + "_bottom_wrapper").text(cards[i].slice(1));
                 }
             }
-
-            $('form#give_info_form').submit(function(event) {
-                socket.emit('client_info_send', {player_name: $('#player_name_input').val(), table_name: $('#table_name_input').val(),
-                                                table_location : $('#table_location_input').val(), team_name: $('#team_name_input').val(),});
-                $("#info_wrapper").text($('#player_name_input').val() + '\n' + $('#team_name_input').val());
-
-                return false;
+            socket.on('choose_troef', function () {
+                choose_troef_allowed = true;
+                console.log("asked for troef");
+                give_command("Choose strike");
             });
 
         });
@@ -172,19 +208,23 @@
     <div id="form_page_wrapper">
         <div id="info_form_stylisticstop"><img src="{{ url_for('static',filename='images/topelement.png') }}"></div>
         <div id="info_form_wrapper">
-            <form id="give_info_form" method="POST" action='#'>
-                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
-                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square"><br><br>
-                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square"><br><br>
-                Locatie op tafel:<br><br>
-                <select name="seat_location" id="table_location_input" class="semi-square"><br><br>
-    			    <option value="0">Team 1 - Positie 1</option>
-    			    <option value="1">Team 2 - Positie 1</option>
-    			    <option value="2">Team 1 - Positie 2</option>
-    			    <option value="3">Team 2 - Positie 2</option>
-    		        </select><br><br><br>
-                 <input type="submit" value="Submit" id="submit_button" class=".semi-square ">
-            </form>
+
+                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square" value="Burgie"><br><br>
+                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square" value="Gilles"><br><br>
+                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square" value="Wieder">
+                <select name="seat_location" id="team_location_input" class="semi-square"><br><br>
+    			    <option value="0">Eerste team</option>
+    			    <option value="1">Tweede team</option>>
+                </select>
+                <br><br>
+                Locatie in team:<br><br>
+                <select name="seat_location" id="team_player_location_input" class="semi-square"><br><br>
+    			    <option value="0">Eerste</option>
+    			    <option value="1">Tweede</option>>
+                </select><br><br><br>
+                <input type="submit" value="Play" id="play_button" class=".semi-square ">
+                <input type="submit" value="View" id="view_button" class=".semi-square ">
+
         </div>
         <div id="info_form_stylisticsbottom"><img src="{{ url_for('static',filename='images/topelement.png') }}"></div>
     </div>
@@ -193,7 +233,12 @@
 <div id="play_page">
     <div id="info_wrapper"></div>
     <div id="give_command"></div>
-    <div id="troef_box"><span></div>
+    <div id="troef_box"></div>
+    <div id="reset_box">
+        Player has left the game<br>
+        <input type="submit" value="Reset" id="reset_button" class=".semi-square ">
+        <input type="submit" value="Wait to reconnect" id="wait_to_button" class=".semi-square ">
+    </div>
     <div id="score_box">
         <div id="score_name_wrapper">
 		    <div id="score_name_team0" class="score_name_team"></div>
@@ -229,36 +274,36 @@
     </div>
     <div id="player_card_wrapper">
         <div id="play_card0_wrapper" class="playing_card">
-            <div id="play_card0_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card0_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card0_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card0_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card1_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card1_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card1_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card1_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card1_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card2_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card2_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card2_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card2_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card2_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card3_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card3_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card3_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card3_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card3_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card4_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card4_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card4_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card4_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card4_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card5_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card5_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card5_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card5_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card5_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card6_wrapper" class="playing_card playing_middle_card">
-            <div id="play_card6_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card6_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card6_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card6_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
         <div id="play_card7_wrapper" class="playing_card">
-            <div id="play_card7_top_wrapper" class="card_top playing_card_top">&spades;</div>
-            <div id="play_card7_bottom_wrapper" class="card_bottom playing_card_bottom">9</div>
+            <div id="play_card7_top_wrapper" class="card_top playing_card_top"></div>
+            <div id="play_card7_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
     </div>
 </div>

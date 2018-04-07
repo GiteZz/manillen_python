@@ -1,7 +1,4 @@
-Burgies
-	Wieder
-		Tim
-		Bob
-	Zieder
-		Jens
-		Pol
+Burgie,Wieder,Tim,0,0
+Burgie,Zieder,Bas,1,0
+Burgie,Wieder,Jip,0,1
+Burgie,Zieder,Bob,1,1

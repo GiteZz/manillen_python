@@ -10,8 +10,12 @@ class communication_module:
         else:
             self.sio.emit(command, data, room=id)
 
-    def send_engine(self, command, id, data):
-        self.engine_functions[command](id, data)
+    def send_engine(self, command, id, data=None):
+        if data is not None:
+            self.engine_functions[command](id, data)
+        else:
+            self.engine_functions[command](id)
+
 
     def add_engine_function(self, command, function):
         self.engine_functions[command] = function

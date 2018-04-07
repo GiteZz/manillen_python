@@ -192,3 +192,14 @@ span {
     width: 9vw;
     top:10vw;
 }
+#reset_box{
+    display: none;
+    z-index: 10;
+    position:absolute;
+    width: 50%;
+    left:25%;
+    top: 55%;
+    height: 10%;
+    font-size:7vh;
+    text-align: center;
+}

@@ -18,7 +18,7 @@ engine = None
 
 comm_module = None
 
-test_game = False
+test_game = True
 if test_game:
     test_c = test_class("test_database.txt")
 
@@ -42,27 +42,47 @@ def ask_client_info(sid, testing=test_game):
     else:
         sio.emit('give_info', test_c.give_test_set(), room=sid)
 
-@sio.on('client_info_send', namespace='/')
+@sio.on('player_info_send', namespace='/')
 def client_send_info(sid, data):
     print("server: client sent info, adding player")
     data["comm_module"] = comm_module
     # sid is considered player id, is used with other thing generate unique id
-    comm_module.send_engine("add_player", sid, data)
+    comm_module.send_engine("add_player", sid, data=data)
+
+@sio.on('viewer_info_send', namespace='/')
+def client_send_info(sid, data):
+    print("server: client sent info, adding viewer")
+    data["comm_module"] = comm_module
+    # sid is considered player id, is used with other thing generate unique id
+    comm_module.send_engine("add_viewer", sid, data=data)
+
+@sio.on('reset_game', namespace='/')
+def client_send_info(sid):
+    print("server, players asked to reset")
+    # sid is considered player id, is used with other thing generate unique id
+    comm_module.send_engine("reset_game", sid)
+
+@sio.on('keep_waiting', namespace='/')
+def client_send_info(sid):
+    print("server, players asked to reset")
+    # sid is considered player id, is used with other thing generate unique id
+    comm_module.send_engine("keep_waiting", sid)
 
 
 @sio.on('answer_card', namespace='/')
 def client_answer_card(sid, data):
-    comm_module.send_engine("answer_card", sid, data)
+    comm_module.send_engine("answer_card", sid, data=data)
 
 @sio.on('disconnect', namespace='/')
 def disconnect(sid):
+    comm_module.send_engine("disconnect", sid)
     socket_list.remove(sid)
     print("client left, amount of connected clients is: " + str(len(socket_list)))
 
 
 @sio.on('answer_troef', namespace='/')
 def answer_troef(sid, card):
-    comm_module.send_engine("answer_troef", sid, card)
+    comm_module.send_engine("answer_troef", sid, data=card)
 
 
 def choose_troef(id):
