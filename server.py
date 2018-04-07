@@ -40,7 +40,11 @@ def ask_client_info(sid, testing=test_game):
     if not test_game:
         sio.emit('ask_info', room=sid)
     else:
-        sio.emit('give_info', test_c.give_test_set(), room=sid)
+        test_set = test_c.give_test_set()
+        if test_set is not None:
+            sio.emit('give_info',test_set , room=sid)
+        else:
+            sio.emit('ask_info', room=sid)
 
 @sio.on('player_info_send', namespace='/')
 def client_send_info(sid, data):

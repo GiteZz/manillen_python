@@ -1,4 +1,4 @@
-class player:
+class man_player:
 
     def __init__(self, name, id, comm_module, position=None, team=None, game=None, cards=None):
         self.name = name
@@ -28,7 +28,7 @@ class player:
         self.cards = []
 
 
-class team:
+class man_team:
     def __init__(self, name, position):
         self.name = name
         self.players = []
@@ -57,7 +57,7 @@ class team:
 
 
 
-class game:
+class man_game:
     def __init__(self, table_name):
         self.table_name = table_name
         self.players = [None] * 4
@@ -72,6 +72,7 @@ class game:
         self.viewers = []
         self.started = False
         self.removed_players = []
+        self.state_dict={"not_started": True, "rejoin_waiting": False, "playing": False, "wait_decision": False}
 
     def add_team(self, team):
         if self.teams[team.position] is None:
@@ -150,6 +151,25 @@ class game:
                     if player is not None:
                         player.reset()
 
+    def get_deleted_player(self, name):
+        for player in self.removed_players:
+            if player.name == name:
+                return player
+        return None
+
+    def get_state(self, name):
+        return self.state_dict[name]
+
+    def set_state(self, name):
+        for key in self.state_dict:
+            self.state_dict[key] = False
+
+        self.state_dict[name] = True
+
+    def reinstate_player(self, player):
+        this_team = player.team
+        this_team.add_player(player)
+        self.add_player(player)
 
 
 class viewer:

@@ -169,6 +169,9 @@
                 $("#reset_box").css('display','block');
             });
 
+            socket.on('restarted_game', function () {
+                $("#reset_box").css('display','none');
+            });
 
             socket.on('play_button', function () {
                 choose_troef_allowed = true;

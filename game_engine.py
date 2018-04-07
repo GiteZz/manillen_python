@@ -1,5 +1,5 @@
 
-from manillen_classes import player, team, game, viewer
+from manillen_classes import man_player, man_team, man_game, viewer
 
 import manillen_const
 import cards
@@ -31,14 +31,22 @@ class engine:
         self.valuedict = {"10": 5, "A": 4, "K": 3, "Q": 2, "J": 1, "9": 0, "8": 0, "7": 0}
         self.comparevalue = {"10": 7, "A": 6, "K": 5, "Q": 4, "J": 3, "9": 2, "8": 1, "7": 0}
 
-        self.function_dict = {"add_player": self.add_player, "answer_troef": self.receive_troef, "answer_card": self.receive_card, "add_viewer": self.add_viewer, "disconnect": self.remove_subscriber, "reset_game": self.reset_game(), "keep_waiting" : self.keep_waiting}
+        self.function_dict = {"add_player": self.add_player, "answer_troef": self.receive_troef, "answer_card": self.receive_card, "add_viewer": self.add_viewer, "disconnect": self.remove_subscriber, "reset_game": self.reset_game, "keep_waiting" : self.keep_waiting}
 
 
     def get_functions(self):
         return self.function_dict
 
+    def restart_play(self, game):
+        self.send_all_players("restarted_game", game)
+        if game.troef_choosen:
+            self.play_cards(game)
+        else:
+            game.players[game.troef_chooser_pos].send("choose_troef")
+
     def start_play(self, game):
         if not game.started:
+            game.started = True
             player_cards = cards.getCards({"min": "7", "split_stack": 4, "shuffle": True, "sorted": True})
 
             team_names = [team.name for team in game.teams]
@@ -112,7 +120,8 @@ class engine:
 
     def send_all_players(self, command, game, data=None, viewer=True):
         for player in game.players:
-            player.send(command, data=data)
+            if player is not None:
+                player.send(command, data=data)
 
         if viewer:
             for viewer in game.viewers:
@@ -266,7 +275,7 @@ class engine:
         if table_name in self.game_set:
             this_game = self.game_set[table_name]
         else:
-            this_game = game(table_name)
+            this_game = man_game(table_name)
             self.game_set[table_name] = this_game
 
         this_game.add_viewer(this_viewer)
@@ -283,43 +292,65 @@ class engine:
         player_name = data["player_name"]
         comm_module = data["comm_module"]
 
-        this_player = player(player_name, id, comm_module, position=position)
+
         if table_name in self.game_set:
             this_game = self.game_set[table_name]
         else:
-            this_game = game(table_name)
+            this_game = man_game(table_name)
             self.game_set[table_name] = this_game
 
-        this_player.set_game(this_game)
 
-        this_team = this_game.get_team(team_name)
-        # team doesn't exist
-        if this_team is None:
-            this_team = team(team_name, position_of_team)
-            this_game.add_team(this_team)
-            this_team.set_game(this_game)
+        if this_game.get_state("rejoin_waiting") or this_game.get_state("wait_decision"):
+            this_player = this_game.get_deleted_player(player_name)
+            if this_player is not None:
+                this_game.reinstate_player(this_player)
+                this_player.id = id
+                self.id_set_games[id] = this_game
+                self.id_set_player[id] = this_player
 
-        this_team.add_player(this_player)
-        this_player.add_team(this_team)
-        self.id_set_games[id] = this_game
-        self.id_set_player[id] = this_player
-        this_game.add_player(this_player)
+                team_names = [team.name for team in this_game.teams]
 
-        if len(this_game) == 4:
-            if not this_game.started:
-                this_game.started = True
-                self.start_play(this_game)
+                this_player.send("set_game_info", data={"cards": this_player.cards, "teams": team_names})
+
+                this_player.send("wait_other_players")
+
+                if len(this_game) == 4:
+                    self.restart_play(this_game)
+        else:
+            this_player = man_player(player_name, id, comm_module, position=position)
+
+            this_player.set_game(this_game)
+
+            this_team = this_game.get_team(team_name)
+            # team doesn't exist
+            if this_team is None:
+                this_team = man_team(team_name, position_of_team)
+                this_game.add_team(this_team)
+                this_team.set_game(this_game)
+
+            this_team.add_player(this_player)
+            this_player.add_team(this_team)
+            self.id_set_games[id] = this_game
+            self.id_set_player[id] = this_player
+            this_game.add_player(this_player)
+
+            if len(this_game) == 4:
+                if not this_game.started:
+                    self.start_play(this_game)
 
 
-        this_player.send("wait_other_players")
+            this_player.send("wait_other_players")
 
         return id
 
     def reset_game(self, id):
         this_game = self.id_set_games[id]
         this_game.reset()
+        this_game.set_state("not_started")
 
     def keep_waiting(self, id):
+        this_game = self.id_set_games[id]
+        this_game.set_state("rejoin_waiting")
 
     # can be player of viewer
     def remove_subscriber(self, id):
@@ -338,7 +369,8 @@ class engine:
             self.id_set_player.pop(id)
             self.id_set_games.pop(id)
             if this_game.started:
-                self.send_all_players("reset_game_lost_player", viewer=False)
+                self.send_all_players("reset_game_lost_player", this_game, viewer=False)
+                this_game.set_state("wait_decision")
         a = 5
 
 if __name__ == "__main__":
