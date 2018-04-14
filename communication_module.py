@@ -1,4 +1,4 @@
-class communication_module:
+class communication_module_sio:
     def __init__(self, socketio_server):
         # engine functions
         self.engine_functions = {}
@@ -22,4 +22,6 @@ class communication_module:
 
     def add_engine_function_dict(self, engine_dict):
         self.engine_functions = engine_dict
+
+
 

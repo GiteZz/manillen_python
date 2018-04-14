@@ -3,8 +3,9 @@ from flask import Flask, render_template
 import eventlet.wsgi
 import eventlet
 import game_engine
-from communication_module import communication_module
+from communication_module import communication_module_sio
 from test_manillen import test_class
+from engine_test import test_comm_module
 
 sio = socketio.Server()
 app = Flask(__name__)
@@ -52,6 +53,17 @@ def client_send_info(sid, data):
     data["comm_module"] = comm_module
     # sid is considered player id, is used with other thing generate unique id
     comm_module.send_engine("add_player", sid, data=data)
+    if test_game:
+        engine_functions_h = engine.get_functions()
+
+        AI_1 = test_comm_module(1, engine_functions=engine_functions_h)
+        AI_2 = test_comm_module(2, engine_functions=engine_functions_h)
+        AI_3 = test_comm_module(3, engine_functions=engine_functions_h)
+
+        comm_module.send_engine("add_player", 1, data=test_c.give_test_set(comm_module=AI_1))
+        comm_module.send_engine("add_player", 2, data=test_c.give_test_set(comm_module=AI_2))
+        comm_module.send_engine("add_player", 3, data=test_c.give_test_set(comm_module=AI_3))
+
 
 @sio.on('viewer_info_send', namespace='/')
 def client_send_info(sid, data):
@@ -100,9 +112,10 @@ def set_game_info(id, data):
     sio.emit('set_game_info', data, room=id)
 
 if __name__ == '__main__':
-    comm_module = communication_module(sio)
+    comm_module = communication_module_sio(sio)
 
-    engine = game_engine.engine()
+    engine = game_engine.engine(test_module=test_c)
+
 
     comm_module.add_engine_function_dict(engine.get_functions())
 

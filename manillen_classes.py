@@ -27,12 +27,16 @@ class man_player:
     def reset(self):
         self.cards = []
 
+    def set_team(self, team):
+        self.team = team
+
 
 class man_team:
     def __init__(self, name, position):
         self.name = name
-        self.players = []
+        self.players = [None]*2
         self.score = 0
+        self.prev_scores = []
         self.game = None
         self.started = False
         self.cards = []
@@ -45,7 +49,8 @@ class man_team:
         self.score += amount
 
     def add_player(self, player):
-        self.players.append(player)
+        # 0 and 1 should go to first place of team, 2 and 3 to second place, position of team doesn't matter
+        self.players[player.position//2] = player
 
     def remove_player(self, player):
         self.players.remove(player)
@@ -55,11 +60,17 @@ class man_team:
         self.score = 0
         self.started = False
 
+    def add_points(self, value):
+        self.score += value
+        self.prev_scores.append(self.score)
+
+    def reset_round(self):
+        self.cards = []
 
 
 class man_game:
     def __init__(self, table_name):
-        self.table_name = table_name
+        self.name = table_name
         self.players = [None] * 4
         self.teams = [None] * 2
         self.troef_chooser_pos = 0
