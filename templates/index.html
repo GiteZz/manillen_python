@@ -3,16 +3,17 @@
     <title>Manillen</title>
     <meta http-equiv="expires" content="0">
 
-    <link rel="stylesheet" type="text/css" href="../static/styles/general.css">
-    <link rel="stylesheet" type="text/css" href="../static/styles/form_page.css">
-    <link rel="stylesheet" type="text/css" href="../static/styles/play_page.css">
+    <link rel="stylesheet" type="text/css" href="static/styles/general.css">
+    <link rel="stylesheet" type="text/css" href="static/styles/form_page.css">
+    <link rel="stylesheet" type="text/css" href="static/styles/play_page.css">
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
     <script type="text/javascript" charset="utf-8">
 
         $(document).ready(function(){
-
 
             namespace = '/';
 
@@ -46,8 +47,13 @@
                     console.log("answering card");
                 }
             });
+            if(document.domain === ""){
+                var socket = io.connect('http://' + '0.0.0.0:4000' + namespace);
+            }else{
+                var socket = io.connect('http://' + '178.116.175.95:4000' + namespace);
+            }
 
-            var socket = io.connect('http://' + '0.0.0.0:5000' + namespace);
+
             socket.on('wait_other_players', function() {
                 console.log("changing to play_page, waiting for other players...");
 
@@ -248,12 +254,12 @@
 <div id="form_page">
 
     <div id="form_page_wrapper">
-        <div id="info_form_stylisticstop"><img src="../static/images/topelement.png"></div>
+        <div id="info_form_stylisticstop"><img src="static/images/topelement.png"></div>
         <div id="info_form_wrapper">
 
-                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square" value="Burgie"><br><br>
-                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square" value="Gilles"><br><br>
-                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square" value="Wieder">
+                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
+                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square"><br><br>
+                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square">
                 <select name="seat_location" id="team_location_input" class="semi-square"><br><br>
     			    <option value="0">Eerste team</option>
     			    <option value="1">Tweede team</option>>
@@ -268,7 +274,7 @@
                 <input type="submit" value="View" id="view_button" class=".semi-square ">
 
         </div>
-        <div id="info_form_stylisticsbottom"><img src="../static/images/topelement.png"></div>
+        <div id="info_form_stylisticsbottom"><img src="static/images/topelement.png"></div>
     </div>
 
 </div>

@@ -19,9 +19,9 @@ engine = None
 
 comm_module = None
 
-test_game = True
-if test_game:
-    test_c = test_class("test_database.txt")
+test_game = False
+
+test_c = test_class("test_database.txt")
 
 
 @app.route('/')
@@ -123,5 +123,5 @@ if __name__ == '__main__':
     app = socketio.Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
-    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
 
