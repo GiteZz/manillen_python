@@ -32,6 +32,10 @@
                 'C': '\u2663'
             };
 
+            fix_layout();
+
+
+
             $(document).on('click', '.playing_card, .playing_card_bottom, .playing_card_top', function(){
                 var index = parseInt(this.id.charAt(9));
 
@@ -101,7 +105,7 @@
 
             socket.on('invalid_troef', function(){
                 sent_troef = false;
-               give_command("invalid, choose again");
+                give_command("invalid, choose again");
             });
             socket.on('play_card', function(){
                 console.log("allowed to play card");
@@ -112,7 +116,7 @@
             socket.on('send_troef', function(data){
                 choose_troef_allowed = false;
                 give_command("");
-                 $("#troef_box").text(dict[data]);
+                $("#troef_box").text(dict[data]);
             });
 
             socket.on('connect', function() {
@@ -123,8 +127,8 @@
                 //ONLY FOR TEST, otherwise board gets cleared after players
 
                 for(i = 0; i < 4; i++){
-                        $("#table_card" + i.toString() + "_top_wrapper").text("");
-                        $("#table_card" + i.toString() + "_bottom_wrapper").text("");
+                    $("#table_card" + i.toString() + "_top_wrapper").text("");
+                    $("#table_card" + i.toString() + "_bottom_wrapper").text("");
                 }
 
                 /*
@@ -161,27 +165,6 @@
 
             });
 
-            //$(document).on('click', '#play_button', function()
-
-            $("#play_button").click(function () {
-                socket.emit('player_info_send', {player_name: $('#player_name_input').val(), game_name: $('#table_name_input').val(),
-                                                location_in_team : $('#team_player_location_input').val(), team_name: $('#team_name_input').val(),location_of_team : $('#team_location_input').val()});
-                $("#info_wrapper").text($('#player_name_input').val() + '\n' + $('#team_name_input').val());
-            });
-
-            $("#view_button").click(function () {
-                socket.emit('viewer_info_send', {table_name: $('#table_name_input').val()});
-
-            });
-
-            $("#reset_button").click(function () {
-                socket.emit('reset_game');
-                $("#reset_box").css('display','none');
-            });
-            $("#wait_to_button").click(function () {
-                socket.emit('keep_waiting');
-                $("#reset_box").css('display','none');
-            });
             socket.on('reset_game_lost_player', function () {
                 $("#reset_box").css('display','block');
             });
@@ -196,22 +179,6 @@
                 give_command("Choose strike");
             });
 
-            function give_command(command_string){
-                $("#give_command").text(command_string);
-
-            }
-
-
-
-            function set_cards(cards) {
-                for (i=0; i<8; i++){
-                    console.log('adding a card');
-			        var c = cards[i].charAt(0);
-                    $("#play_card" + i.toString() + "_top_wrapper").text(dict[c]);
-
-			        $("#play_card" + i.toString() + "_bottom_wrapper").text(cards[i].slice(1));
-                }
-            }
             socket.on('choose_troef', function () {
                 choose_troef_allowed = true;
                 console.log("asked for troef");
@@ -246,6 +213,118 @@
 
             });
 
+            $("#play_button").click(function () {
+                socket.emit('player_info_send', {player_name: $('#player_name_input').val(), game_name: $('#table_name_input').val(),
+                    location_in_team : $('#team_player_location_input').val(), team_name: $('#team_name_input').val(),location_of_team : $('#team_location_input').val()});
+                $("#info_wrapper").text($('#player_name_input').val() + '\n' + $('#team_name_input').val());
+            });
+
+            $("#view_button").click(function () {
+                socket.emit('viewer_info_send', {table_name: $('#table_name_input').val()});
+
+            });
+
+            $("#reset_button").click(function () {
+                socket.emit('reset_game');
+                $("#reset_box").css('display','none');
+            });
+            $("#wait_to_button").click(function () {
+                socket.emit('keep_waiting');
+                $("#reset_box").css('display','none');
+            });
+
+
+
+
+            function give_command(command_string){
+                $("#give_command").text(command_string);
+
+            }
+
+
+
+            function set_cards(cards) {
+                for (i=0; i<8; i++){
+                    console.log('adding a card');
+                    var c = cards[i].charAt(0);
+                    $("#play_card" + i.toString() + "_top_wrapper").text(dict[c]);
+
+                    $("#play_card" + i.toString() + "_bottom_wrapper").text(cards[i].slice(1));
+                }
+            }
+            
+            
+            function fix_layout() {
+                var w = window.innerWidth;
+                var h = window.innerHeight;
+                var ratio = h/w;
+
+                if(ratio < 1){
+                    var form_ratio = 60/40;
+                    var form_height = h * 0.6;
+                    var form_width = form_height * (1/form_ratio);
+                    var form_left = (w-form_width) / 2;
+                    var form_top = (h-form_height) / 2;
+                    var form_bottom = form_top + form_height;
+                    var image_ratio = .2;
+                    var image_width = 1.5 * form_width;
+                    var image_height = image_width * image_ratio;
+                    var image_left = (w - image_width) / 2;
+                    var image_margin = image_height/2;
+                    var font_size = 0.015*h;
+                    var info_form_left =  .15 * form_width;
+                    var line_height = 1.5 * font_size;
+                    var info_form_height = 20 * line_height;
+                    var info_form_top = (form_height - info_form_height) / 2;
+
+
+                    img_css = {'position':'absolute',
+                               'left': image_left.toString() + "px",
+                               'width': image_width.toString() + "px",
+                               'height': image_height.toString() + "px"};
+
+                    $("#info_form_stylisticstop").css(img_css);
+                    $("#info_form_stylisticsbottom").css(img_css);
+
+                    $("#info_form_wrapper").css({'position': 'absolute',
+                                                 'left': form_left.toString() + "px",
+                                                 'width': form_width.toString() + "px",
+                                                 'height': form_height.toString() + "px",
+                                                 'top': form_top.toString() + "px"});
+
+                    $("#info_form_stylisticstop").css('top', (form_top - image_margin - image_height).toString() + "px");
+                    $("#info_form_stylisticsbottom").css('top', (form_bottom + image_margin).toString() + "px");
+
+                    $("#info_form").css({'position': 'absolute',
+                                         'top': info_form_top.toString() + "px",
+                                         'left' : info_form_left.toString() + "px",
+                                         'font-size': font_size.toString() + "px",
+                    'line-height': line_height.toString() + "px"});
+
+                    var play_card_width = 0.1*w;
+                    var play_card_margin = (w - 8 * play_card_width) / 8;
+                    var play_card_height = h * .3;
+                    console.log(w);
+                    console.log(play_card_width);
+                    console.log(play_card_margin);
+                    for(var i = 0; i < 4; i++){
+                        $("#play_card" + i.toString() + "_wrapper").css({'position': 'absolute',
+                        'bottom': '0',
+                        'left': (i*(play_card_width + play_card_margin)).toString() + "px",
+                        'width': play_card_width.toString() + "px",
+                        'height': play_card_height.toString() + "px"});
+
+                        $("#play_card" + (7-i).toString() + "_wrapper").css({'position': 'absolute',
+                            'bottom': '0',
+                            'right': (i*(play_card_width + play_card_margin)).toString() + "px",
+                            'width': play_card_width.toString() + "px",
+                            'height': play_card_height.toString() + "px"});
+                    }
+
+                }
+            }
+
+
         });
 
     </script>
@@ -253,29 +332,29 @@
 <body>
 <div id="form_page">
 
-    <div id="form_page_wrapper">
-        <div id="info_form_stylisticstop"><img src="static/images/topelement.png"></div>
-        <div id="info_form_wrapper">
 
-                Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
-                Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square"><br><br>
-                Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square">
-                <select name="seat_location" id="team_location_input" class="semi-square"><br><br>
-    			    <option value="0">Eerste team</option>
-    			    <option value="1">Tweede team</option>>
-                </select>
-                <br><br>
-                Locatie in team:<br><br>
-                <select name="seat_location" id="team_player_location_input" class="semi-square"><br><br>
-    			    <option value="0">Eerste</option>
-    			    <option value="1">Tweede</option>>
-                </select><br><br><br>
-                <input type="submit" value="Play" id="play_button" class=".semi-square ">
-                <input type="submit" value="View" id="view_button" class=".semi-square ">
-
+    <img src="static/images/top_2.png" id="info_form_stylisticstop">
+    <div id="info_form_wrapper">
+        <div id="info_form">
+            Tafelnaam:<br><br><input type="text" name="table" id="table_name_input" class="semi-square"><br><br>
+            Naam:<br><br><input type="text" name="name" id="player_name_input" class="semi-square"><br><br>
+            Team:<br><br><input type="text" name="name" id="team_name_input" class="semi-square"><br><br>
+            <select name="seat_location" id="team_location_input" class="semi-square"><br><br>
+                <option value="0">Eerste team</option>
+                <option value="1">Tweede team</option>>
+            </select>
+            <br><br>
+            Locatie in team:<br><br>
+            <select name="seat_location" id="team_player_location_input" class="semi-square"><br><br>
+                <option value="0">Eerste</option>
+                <option value="1">Tweede</option>>
+            </select><br><br><br>
+            <input type="submit" value="Play" id="play_button" class=".semi-square ">
+            <input type="submit" value="View" id="view_button" class=".semi-square ">
         </div>
-        <div id="info_form_stylisticsbottom"><img src="static/images/topelement.png"></div>
     </div>
+    <img src="static/images/top_2.png" id="info_form_stylisticsbottom">
+
 
 </div>
 <div id="play_page">
@@ -289,13 +368,13 @@
     </div>
     <div id="score_box">
         <div id="score_name_wrapper">
-		    <div id="score_name_team0" class="score_name_team"></div>
+            <div id="score_name_team0" class="score_name_team"></div>
             <div id="score_name_team1" class="score_name_team"></div>
-	    </div>
+        </div>
         <div id="score_value_wrapper">
-		    <div id="score_value_team0" class="score_value_team"></div>
+            <div id="score_value_team0" class="score_value_team"></div>
             <div id="score_value_team1" class="score_value_team"></div>
-	    </div>
+        </div>
     </div>
     <div id="playing_box">
         <div id="table_card_wrapper" class="">
@@ -320,7 +399,7 @@
     <div id="stitch_line_wrapper">
         <div id="stitch_line"></div>
     </div>
-    <div id="player_card_wrapper">
+
         <div id="play_card0_wrapper" class="playing_card">
             <div id="play_card0_top_wrapper" class="card_top playing_card_top"></div>
             <div id="play_card0_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
@@ -353,7 +432,7 @@
             <div id="play_card7_top_wrapper" class="card_top playing_card_top"></div>
             <div id="play_card7_bottom_wrapper" class="card_bottom playing_card_bottom"></div>
         </div>
-    </div>
+
 </div>
 </body>
 
