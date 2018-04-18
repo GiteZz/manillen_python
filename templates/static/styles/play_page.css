@@ -4,9 +4,9 @@
     left: 0;
     top: 0;
     position: absolute;
-    background: rgba(22,56,27,0.8);
     color:lightgray;
-    display:none;
+    background: rgba(22,56,27,0.8);
+    display:block;
 }
 #player_card_wrapper{
     position: absolute;
@@ -35,9 +35,6 @@
     width: 97%;
 }
 .playing_card{
-
-    height: 100%;
-    width: 10%;
     -webkit-border-radius: 1vw;
     -moz-border-radius: 1vw;
     border-radius: 1vw;
@@ -115,6 +112,7 @@
     float:left;
     margin-left: 4.4%;
 }
+
 .playing_middle_card{
     display:inline-block;
     margin-left: 1.2%;
@@ -128,6 +126,7 @@
     display:inline-block;
     margin-left: 1.2%;
 }
+
 #troef_box{
     width:7vw;
     height:7vw;
@@ -147,4 +146,58 @@
 span {
   display: inline-block;
   vertical-align: middle;
+}
+#score_box{
+	position:absolute;
+	top:0;
+	left:0;
+	height:50vh;
+	width:10vw;
+	z-index:50;
+}
+#score_name_wrapper{
+    width: 100%;
+    height: 5%;
+}
+#score_value_wrapper{
+    width: 100%;
+    height: 94%;
+}
+.score_name_team{
+    width: 49%;
+    height: 100%;
+    float: left;
+    text-align: center;
+}
+.score_value_team{
+    width: 49%;
+    height: 100%;
+    float: left;
+    text-align: center;
+}
+#give_command{
+    position:absolute;
+    width: 50%;
+    left:25%;
+    top: 55%;
+    height: 10%;
+    font-size:7vh;
+    text-align: center;
+}
+#info_wrapper{
+    position: absolute;
+    right: 0;
+    width: 9vw;
+    top:10vw;
+}
+#reset_box{
+    display: none;
+    z-index: 10;
+    position:absolute;
+    width: 50%;
+    left:25%;
+    top: 55%;
+    height: 10%;
+    font-size:7vh;
+    text-align: center;
 }
