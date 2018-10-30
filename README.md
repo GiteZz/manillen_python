@@ -19,3 +19,7 @@ Communication module should implement these functions on the client side:
 	
 These should be read with a send_client(command, id, data=...)
 You can give command to server with send_engine(command, id, data=...)
+
+![Alt text](login.png?raw=true "Login screen")
+
+![Alt text](play.png?raw=true "Play screen")
