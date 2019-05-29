@@ -1,6 +1,6 @@
 # Manillen
 
-This is a further advancement for my previous manillen game written in nodejs. This one is written in python because it more fun to write python then nodejs. Game logic is done and the game should be looking good on desktop. AI agents can be easily implemented by creating a custom communication module and implementing the desired functions.
+This is a further advancement for my previous manillen game written in nodejs. This one is writter in python. Game logic is done and the game should be looking good on desktop. AI agents can be easily implemented by creating a custom communication module and implementing the desired functions.
 
 Communication module should implement these functions on the client side:
 * restarted_game
